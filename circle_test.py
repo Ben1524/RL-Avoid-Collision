@@ -57,14 +57,14 @@ def enjoy(comm, env, policy, action_bound):
         # generate actions at rank==0
         mean, scaled_action =generate_action_no_sampling(env=env, state_list=state_list,
                                                policy=policy, action_bound=action_bound)
-        # 简单的移动逻辑，让障碍物向前移动
-        env.move_obstacle_randomly()
+
 
         # execute actions
         real_action = comm.scatter(scaled_action, root=0)
         if terminal == True:
             real_action[0] = 0
         env.control_vel(real_action)
+        # rate.sleep()
         rospy.sleep(0.001)
         # get informtion
         r, terminal, result = env.get_reward_and_terminate(step)
