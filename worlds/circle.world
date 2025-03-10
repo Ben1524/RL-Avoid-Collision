@@ -1,0 +1,112 @@
+show_clock 0
+show_clock_interval 10000
+resolution 0.01
+threads 4
+speedup 1
+
+define sicklaser ranger
+(
+  sensor(
+    pose [ 0 0 0.1 0 ]
+    fov 180
+    range [ 0.0 6.0 ]
+    samples 512
+  )
+  color "random"
+  block(
+    points 4
+    point[0] [0 0]
+    point[1] [0 1]
+    point[2] [1 1]
+    point[3] [1 0]
+    z [0 0.21]
+  )
+)
+
+define floorplan model
+(
+  color "gray30"
+  boundary 1
+
+  gui_nose 0
+  gui_grid 0
+  gui_move 0
+  gui_outline 0
+  gripper_return 0
+  fiducial_return 0
+  ranger_return 1
+  obstacle_return 1
+)
+
+floorplan
+(
+  name "blank"
+  bitmap "rink.png"
+  size [60.000 60.000 0.800]
+  pose [0.000 0.000 0.000 0.000]
+)
+
+window
+(
+  size [1550 1550]
+
+  # Camera options
+  scale 35
+  center [0  0]
+  rotate [ 0.000  0.000 ]
+
+  # GUI options
+  show_data 1
+  show_flags 1
+  show_blocks 1
+  show_clock 1
+  show_footprints 1
+  show_grid 1
+  show_trailarrows 0
+  show_trailrise 0
+  show_trailfast 0
+  show_occupancy 0
+)
+
+define agent position
+(
+  size [0.44 0.38 0.22]
+  origin [0 0 0 0]
+  gui_nose 1
+  color "random"
+  drive "diff"
+  obstacle_return 1
+  ranger_return 0.5
+  blob_return 1
+  fiducial_return 1
+  sicklaser(
+    pose [ 0 0 0 0 ]
+  )
+)
+
+agent( pose [25.00 0.00 0.00 180.00])
+agent( pose [24.80 3.13 0.00 187.20])
+agent( pose [24.21 6.22 0.00 194.40])
+agent( pose [23.24 9.20 0.00 201.60])
+agent( pose [21.91 12.04 0.00 208.80])
+agent( pose [20.23 14.69 0.00 216.00])
+
+
+define dynamic_obstacle model
+(
+  color "red"
+  size [0.5 0.5 0.5]
+  gui_nose 0
+  obstacle_return 1
+  ranger_return 1
+  drive "diff"
+  velocity_bounds [-0.2 0.2 0 0 0 0 -30.0 30.0]
+  acceleration_bounds [-0.1 0.1 0 0 0 0 -15.0 15.0]
+)
+
+dynamic_obstacle( pose [10.0 10.0 0.0 0.0])
+dynamic_obstacle( pose [20.0 -10.0 0.0 90.0])
+dynamic_obstacle( pose [20.0 10.0 0.0 0.0])
+dynamic_obstacle( pose [20.0 -20.0 0.0 90.0])
+dynamic_obstacle( pose [30.0 5.0 0.0 0.0])
+dynamic_obstacle( pose [20.0 -30.0 0.0 90.0])
