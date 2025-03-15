@@ -42,7 +42,7 @@ mpiexec -np 44 python ppo_stage2.py
 
 ```
 rosrun stage_ros_add_pose_and_crash stageros worlds/circle.world
-mpiexec --allow-run-as-root --use-hwthread-cpus --oversubscribe -np 50 python circle_test.py
+mpiexec --allow-run-as-root --use-hwthread-cpus --oversubscribe -np 6 python circle_test.py
 ```
 
 ## Notice

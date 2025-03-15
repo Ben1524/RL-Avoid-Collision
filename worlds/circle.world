@@ -1,7 +1,7 @@
 show_clock 0
 show_clock_interval 10000
 resolution 0.01
-threads 4
+threads 12
 speedup 1
 
 define sicklaser ranger
@@ -38,22 +38,21 @@ define floorplan model
   obstacle_return 1
 )
 
+
 floorplan
 (
   name "blank"
   bitmap "rink.png"
-  size [60.000 60.000 0.800]
+  size [80.000 80.000 1.000]
   pose [0.000 0.000 0.000 0.000]
 )
-
 window
 (
-  size [1550 1550]
-
-  # Camera options
-  scale 35
-  center [0  0]
-  rotate [ 0.000  0.000 ]
+  size [1300 1300]
+  scale 40         # 进一步缩小缩放
+  center [0 0]
+  rotate [0 0]
+  show_occupancy 1 # 可选开启占用网格显示
 
   # GUI options
   show_data 1
@@ -70,7 +69,7 @@ window
 
 define agent position
 (
-  size [0.44 0.38 0.22]
+  size [0.88 0.76 0.44]
   origin [0 0 0 0]
   gui_nose 1
   color "random"
@@ -92,21 +91,21 @@ agent( pose [21.91 12.04 0.00 208.80])
 agent( pose [20.23 14.69 0.00 216.00])
 
 
-define dynamic_obstacle model
+define dynamic_obstacle_rect model
 (
-  color "red"
-  size [0.5 0.5 0.5]
-  gui_nose 0
-  obstacle_return 1
-  ranger_return 1
-  drive "diff"
+    color "red"
+    size [1 1 1]
+    gui_nose 0
+    obstacle_return 1
+    ranger_return 1
+    drive "diff"
   velocity_bounds [-0.2 0.2 0 0 0 0 -30.0 30.0]
   acceleration_bounds [-0.1 0.1 0 0 0 0 -15.0 15.0]
 )
 
-dynamic_obstacle( pose [10.0 10.0 0.0 0.0])
-dynamic_obstacle( pose [20.0 -10.0 0.0 90.0])
-dynamic_obstacle( pose [20.0 10.0 0.0 0.0])
-dynamic_obstacle( pose [20.0 -20.0 0.0 90.0])
-dynamic_obstacle( pose [30.0 5.0 0.0 0.0])
-dynamic_obstacle( pose [20.0 -30.0 0.0 90.0])
+dynamic_obstacle_rect( pose [10.0 10.0 0.0 0.0])
+dynamic_obstacle_rect( pose [20.0 -10.0 0.0 90.0])
+dynamic_obstacle_rect( pose [20.0 10.0 0.0 0.0])
+dynamic_obstacle_rect( pose [20.0 -20.0 0.0 90.0])
+dynamic_obstacle_rect( pose [30.0 5.0 0.0 0.0])
+dynamic_obstacle_rect( pose [20.0 -30.0 0.0 90.0])

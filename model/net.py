@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 from torch.nn import init
 from torch.nn import functional as F
-
+from torch.autograd import Variable
 from model.utils import log_normal_density
 
 class Flatten(nn.Module):
@@ -134,7 +134,6 @@ class MLPPolicy(nn.Module):
 
 
 if __name__ == '__main__':
-    from torch.autograd import Variable
 
     net = MLPPolicy(3, 2)
 
