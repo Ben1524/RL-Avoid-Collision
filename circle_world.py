@@ -51,8 +51,8 @@ def get_pose_info_from_file(file_path):
 
 file_path = "worlds/new_world.world"
 agent_poses, goal_marker_poses = get_pose_info_from_file(file_path)
-print (agent_poses)
-print (goal_marker_poses)
+# print (agent_poses)
+# print (goal_marker_poses)
 
 class StageWorld():
     def __init__(self, beam_num, index, num_env):
@@ -72,7 +72,7 @@ class StageWorld():
 
         # used in generate goal point
         self.map_size = np.array([8., 8.], dtype=np.float32)  # 20x20m
-        self.goal_size = 1
+        self.goal_size = 1.5
 
         self.robot_value = 10.
         self.goal_value = 0.
@@ -117,6 +117,10 @@ class StageWorld():
         self.current_path = Path()
         self.current_path.header.frame_id = 'map'
 
+        # 新增：近距离惩罚参数
+        self.min_obstacle_range = 1  # 前方障碍物最小安全距离（米）
+        self.obstacle_penalty_coeff = 10.0  # 惩罚系数（距离每近1米惩罚值）
+
 
         # # Wait until the first callback
         self.speed = None
@@ -151,9 +155,12 @@ class StageWorld():
         self.path_pub.publish(self.current_path)
 
     def laser_scan_callback(self, scan):
-        self.scan_param = [scan.angle_min, scan.angle_max, scan.angle_increment, scan.time_increment,
-                           scan.scan_time, scan.range_min, scan.range_max]
+        self.scan_param = [scan.angle_min, scan.angle_max, scan.angle_increment, 
+                          scan.time_increment, scan.scan_time, scan.range_min, scan.range_max]
         self.scan = np.array(scan.ranges)
+        # 新增：处理无效值（NaN/inf）
+        self.scan[np.isnan(self.scan)] = scan.range_max  # 替换为最大有效距离
+        self.scan[np.isinf(self.scan)] = scan.range_max
         self.laser_cb_num += 1
 
     def odometry_callback(self, odometry):
@@ -244,7 +251,35 @@ class StageWorld():
         reward_g = (self.pre_distance - self.distance) * 2.5
         reward_c = 0
         reward_w = 0
+        reward_o = 0.0  # 新增：障碍物近距离惩罚
         result = 0
+        # 新增：计算前方障碍物最小距离（仅考虑前方180°）
+        # if self.scan is not None and len(self.scan) > 0:
+        #     angle_min = self.scan_param[0]
+        #     angle_increment = self.scan_param[2]
+        #     num_beams = len(self.scan)
+        #     front_angle = np.pi  # 180° 前方范围
+        #     front_start_angle = -front_angle / 2
+        #     front_end_angle = front_angle / 2
+
+        #     # 计算前方激光束索引
+        #     front_start = int((front_start_angle - angle_min) / angle_increment)
+        #     front_end = int((front_end_angle - angle_min) / angle_increment)
+        #     front_start = max(0, front_start)
+        #     front_end = min(num_beams - 1, front_end)
+
+        #     if front_start <= front_end:
+        #         front_ranges = self.scan[front_start:front_end + 1]
+        #         min_front_range = np.min(front_ranges)
+        #     else:
+        #         min_front_range = self.scan_param[5]  # 无前方光束时设为最小距离（通常为0）
+
+        #     # 计算惩罚：距离越近，惩罚越大
+        #     if min_front_range < self.min_obstacle_range:
+        #         delta = self.min_obstacle_range - min_front_range
+        #         reward_o = -self.obstacle_penalty_coeff * delta
+
+    
 
         is_crash = self.get_crash_state()
 
@@ -258,13 +293,13 @@ class StageWorld():
             reward_c = -15.
             result = 'Crashed'
 
-        if np.abs(w) > 0.7:
+        if np.abs(w) > 0.75:
             reward_w = -0.1 * np.abs(w)
 
-        if t > 10000:
+        if t > 15000:
             terminate = True
             result = 'Time out'
-        reward = reward_g + reward_c + reward_w
+        reward = reward_g + reward_c + reward_w + reward_o
 
         return reward, terminate, result
 

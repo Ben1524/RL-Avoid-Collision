@@ -107,7 +107,7 @@ def generate_non_overlapping_goal_points(agent_positions, existing_obstacles):
 num_obstacles = 30
 existing_obstacles, obstacle_configs = generate_non_overlapping_obstacles(num_obstacles)
 
-num_agents = 24
+num_agents = 30
 agent_configs, agent_positions = generate_non_overlapping_agents(num_agents, existing_obstacles)
 
 goal_configs, _ = generate_non_overlapping_goal_points(agent_positions, existing_obstacles)

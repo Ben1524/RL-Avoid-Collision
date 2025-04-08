@@ -79,7 +79,9 @@ def generate_action(env, state_list, policy, action_bound):
         scaled_action = None
         logprob = None
 
+    
     return v, a, logprob, scaled_action
+
 
 def generate_action_no_sampling(env, state_list, policy, action_bound):
     if env.index == 0:
@@ -193,10 +195,10 @@ def ppo_update_stage1(policy, optimizer, batch_size, memory, epoch,
 
     print('update')
 
-
 def ppo_update_stage2(policy, optimizer, batch_size, memory, filter_index, epoch,
-               coeff_entropy=0.02, clip_value=0.2,
-               num_step=2048, num_env=12, frames=1, obs_size=24, act_size=4):
+                      coeff_entropy=0.02, clip_value=0.2,
+                      num_step=2048, num_env=12, frames=1, obs_size=24, act_size=4,
+                      return_metrics=False):
     obss, goals, speeds, actions, logprobs, targets, values, rewards, advs = memory
 
     advs = (advs - advs.mean()) / advs.std()
@@ -217,10 +219,14 @@ def ppo_update_stage2(policy, optimizer, batch_size, memory, filter_index, epoch
     advs = np.delete(advs, filter_index, 0)
     targets = np.delete(targets, filter_index, 0)
 
+    total_policy_loss = 0.0
+    total_value_loss = 0.0
+    total_entropy = 0.0
+    batch_count = 0
 
     for update in range(epoch):
-        sampler = BatchSampler(SubsetRandomSampler(list(range(advs.shape[0]))), batch_size=batch_size,
-                               drop_last=True)
+        sampler = BatchSampler(SubsetRandomSampler(list(range(advs.shape[0]))), 
+                               batch_size=batch_size, drop_last=True)
         for i, index in enumerate(sampler):
             sampled_obs = Variable(torch.from_numpy(obss[index])).float().cuda()
             sampled_goals = Variable(torch.from_numpy(goals[index])).float().cuda()
@@ -231,8 +237,8 @@ def ppo_update_stage2(policy, optimizer, batch_size, memory, filter_index, epoch
             sampled_targets = Variable(torch.from_numpy(targets[index])).float().cuda()
             sampled_advs = Variable(torch.from_numpy(advs[index])).float().cuda()
 
-
-            new_value, new_logprob, dist_entropy = policy.evaluate_actions(sampled_obs, sampled_goals, sampled_speeds, sampled_actions)
+            new_value, new_logprob, dist_entropy = policy.evaluate_actions(
+                sampled_obs, sampled_goals, sampled_speeds, sampled_actions)
 
             sampled_logprobs = sampled_logprobs.view(-1, 1)
             ratio = torch.exp(new_logprob - sampled_logprobs)
@@ -248,15 +254,28 @@ def ppo_update_stage2(policy, optimizer, batch_size, memory, filter_index, epoch
             loss = policy_loss + 20 * value_loss - coeff_entropy * dist_entropy
             optimizer.zero_grad()
             loss.backward()
+
+            # 在优化步骤前添加梯度裁剪
+            torch.nn.utils.clip_grad_norm_(policy.parameters(), max_norm=5.0)
             optimizer.step()
-            info_p_loss, info_v_loss, info_entropy = float(policy_loss.detach().cpu().numpy()), \
-                                                     float(value_loss.detach().cpu().numpy()), float(
-                                                    dist_entropy.detach().cpu().numpy())
-            logger_ppo.info('{}, {}, {}'.format(info_p_loss, info_v_loss, info_entropy))
 
+            # 累积指标
+            total_policy_loss += policy_loss.item()
+            total_value_loss += value_loss.item()
+            total_entropy += dist_entropy.item()
+            batch_count += 1
 
+            # 记录每批次日志
+            logger_ppo.info('Policy Loss: {:.4f}, Value Loss: {:.4f}, Entropy: {:.4f}'.format(
+                policy_loss.item(), value_loss.item(), dist_entropy.item()))
 
-    print('filter {} transitions; update'.format(len(filter_index)))
+    # 计算平均指标
+    mean_policy_loss = total_policy_loss / batch_count if batch_count > 0 else 0
+    mean_value_loss = total_value_loss / batch_count if batch_count > 0 else 0
+    mean_entropy = total_entropy / batch_count if batch_count > 0 else 0
 
-
-
+    print('Filtered {} transitions; Updated'.format(len(filter_index)))
+    if return_metrics:
+        return mean_value_loss, mean_policy_loss, mean_entropy
+    else:
+        return None

@@ -1,8 +1,8 @@
+from functools import reduce
 import numpy as np
 import bisect
 import torch
 from torch.autograd import Variable
-from functools import reduce
 
 def test_init_pose(index):
     init_pose_list = [[25.00, 0.00, np.pi], [24.80, 3.13, np.pi*26/25], [24.21, 6.22, np.pi*27/25], [23.24, 9.20, np.pi*28/25],

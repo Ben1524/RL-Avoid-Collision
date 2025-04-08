@@ -8,7 +8,8 @@ from mpi4py import MPI
 from torch.optim import Adam
 from collections import deque
 
-from model.net import MLPPolicy, CNNPolicy
+from model.net3 import CNNPolicy
+from model.net2 import EnhancedCNNPolicy
 from circle_world import StageWorld
 from model.ppo import generate_action_no_sampling, transform_buffer
 
@@ -18,7 +19,7 @@ from model.ppo import generate_action_no_sampling, transform_buffer
 
 MAX_EPISODES = 5000
 LASER_BEAM = 512
-LASER_HIST = 3
+LASER_HIST = 6
 HORIZON = 200
 GAMMA = 0.99
 LAMDA = 0.95
@@ -46,7 +47,7 @@ def enjoy(comm, env, policy, action_bound):
     terminal = False
 
     obs = env.get_laser_observation()
-    obs_stack = deque([obs, obs, obs])
+    obs_stack = deque([obs]*LASER_HIST)
     goal = np.asarray(env.get_local_goal())
     speed = np.asarray(env.get_self_speed())
     state = [obs_stack, goal, speed]
@@ -93,12 +94,12 @@ if __name__ == '__main__':
 
     env = StageWorld(OBS_SIZE, index=rank, num_env=NUM_ENV)
     reward = None
-    action_bound = [[0, -1], [1, 1]]
+    action_bound = [[-0.5, -1], [2, 1]]
 
     if rank == 0:
-        policy_path = 'policy'
+        policy_path = 'policy/policy_ori'
         # policy = MLPPolicy(obs_size, act_size)
-        policy = CNNPolicy(frames=LASER_HIST, action_space=2)
+        policy = CNNPolicy(frames=LASER_HIST, action_space=2)  #CNNPolicy(frames=LASER_HIST, action_space=2)
         policy.cuda()
         opt = Adam(policy.parameters(), lr=LEARNING_RATE)
         mse = nn.MSELoss()
@@ -106,7 +107,7 @@ if __name__ == '__main__':
         if not os.path.exists(policy_path):
             os.makedirs(policy_path)
 
-        file = policy_path + '/stage2_840.pth'
+        file = policy_path + '/stage2_6_2320.pth'
         if os.path.exists(file):
             print ('####################################')
             print ('############Loading Model###########')
